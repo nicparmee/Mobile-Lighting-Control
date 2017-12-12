@@ -1,0 +1,1782 @@
+<html>
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=0.5, user-scalable=no,maximum-scale=0.5" >
+	<head>
+		<link rel="stylesheet" type="text/css" href="mystyle.css">
+		<meta charset="utf-8">
+		<title>LightControl</title>
+	 
+	</head>
+
+	
+     <script src="/socket.io/socket.io.js"></script>
+
+		<script type="text/javascript" src= "raphael.js"> </script> 
+		<script type="text/javascript" src= "raphaeltools.js"> </script>
+		<script type="text/javascript" src= "jquery.js"> </script>
+		<script type="text/javascript" src= "jquery.min.js"> </script>
+		<script type="text/javascript" src= "kinetic.js"> </script>
+		<script type="text/javascript" src="huewheel.min.js"></script>
+  </head>
+   <body>
+   
+   <div id="container">
+	<div id="paper1"> </div>
+	<div id="paper2"> </div>
+	<div id="paper3"> 
+  </div>
+  
+  <div id="containerwheel">
+    <div id="huewheel"></div>
+    
+
+        <div id="options">
+
+        </div>
+		</div>
+
+<script type="text/javascript">
+
+
+var screenWidth = window.innerWidth;
+var screenHeight = window.innerHeight;
+var halfscreenWidth = screenWidth/2;
+
+
+var mobile = true;
+//mobile = detectmob(); 
+var tick = false;
+var tick2 = false;
+var myTimer = setInterval(function() {tick = true;}, 50);
+var myTimer2 = setInterval(function() {tick2 = true;}, 100);
+
+var x;
+var y;
+var z;
+var intensity;
+var frequency;
+var intensitychange = false;
+var zoomchange = false;
+var strobechange = false;
+var frequencychange = false;
+var oldz;
+var oldy;
+
+
+
+var play = false;
+var move = false;
+var firstmove = true;
+var movecount = 0;
+var colmove = ['yellow','blue','pink','green','orange','lightgreen','red','purple'];
+var colourclicked = false;
+var Recording = false;
+
+var rightslider = screenWidth/3.5;
+var sliderstart = screenHeight / 3;
+var bottomSlider = screenHeight / 10;
+
+var textxslider1;
+var textyslider1;
+
+var sidebuttonx = screenWidth/1.42;
+var sidebuttony = screenHeight/2/5;
+
+var titlex = halfscreenWidth;
+var titley = screenHeight/20;
+
+var BtnWidth = screenWidth/5;
+var BtnHeight = screenHeight/10;
+var BtnHeightGap = BtnHeight + BtnHeight / 3;
+
+var fontsize = 22;
+var BeginY = screenHeight/2.2;
+var BeginX = screenWidth/10;
+
+var socket = io(); 
+var paper;
+var on = false;
+
+var one = (screenWidth - (screenWidth/3));
+var two = (screenHeight - (screenHeight/2));
+
+var layer;
+var layer2;
+
+var devcount = 30;
+var devused = [];
+var devarray = [];
+
+socket.on('devices', function(devices){
+devused = devices;
+
+
+var Display = function(){
+var stage = new Kinetic.Stage({
+    container: 'paper2',
+    width: rightslider,
+    height: sliderstart,
+  });
+  
+  
+var imageObj = new Image();
+imageObj.src = '/img/scroll.png';
+			
+var imageObj2 = new Image();
+imageObj2.src = '/img/scroll2.png';
+
+imageObj.onload = function(){
+ var slider = new Kinetic.Image({
+      x: 0,
+      y: 0,
+      image: imageObj,
+		width: BtnHeight/1.5,
+		height: BtnWidth/2,
+		draggable: true,
+		dragBoundFunc: function (pos) {
+				var X = pos.x;
+				var Y = pos.y;
+				if (X < minX) {
+					X = minX;
+				}
+				if (X > maxX) {
+					X = maxX;
+				}
+				if (Y < minY) {
+					Y = minY;
+				}
+				if (Y > maxY) {
+					Y = maxY;
+				}
+				return ({
+					x: X,
+					y: Y
+				});
+			}
+    });
+ 
+	  
+	var white = new Kinetic.Rect({
+            x: slider.getWidth()-slider.getWidth()/1.6,
+			y: 0,
+            width: slider.getWidth()/5,
+            height: slider.getHeight()*4,
+            fill: '#bbb',
+            stroke: 'black',
+            strokeWidth: 3
+        });
+
+	var IntensityText = new Kinetic.Text({
+            x: slider.getX(),
+            y: slider.getY()+white.getHeight()+5,
+            text: 'Intensity',
+            fontSize: 18,
+            fontFamily: 'Arial',
+            width:slider.getWidth() ,
+            align: 'center',    
+            fill: 'white'
+        });	
+		
+	  layer = new Kinetic.Layer();
+	  
+	  
+	  layer.add(white);
+	  layer.add(slider);
+	  layer.add(IntensityText);
+	  layer.draw();
+	  
+	  stage.add(layer);
+	  
+	  
+	 var posy = slider.getPosition().y;
+	  
+		var height=slider.getHeight();
+		var width = slider.getWidth();
+        var minX=slider.getX();
+        var maxX=slider.getX();
+        var minY=white.getY();
+        var maxY=white.getY()+slider.getHeight()*3;
+		
+		textxslider1 = white.getX();
+		textyslider1 = white.getY();
+		
+		slider.on('dragmove',function(){
+			if(slider.getPosition().y != null)
+			socket.emit('intensity', devarray,250 + (posy - slider.getPosition().y));
+		});
+
+		var slider2 = new Kinetic.Image({
+        x: BtnWidth/2 + slider.getWidth()/2,
+        y: 0,
+        width: BtnHeight/1.5,
+        height: BtnWidth/2,
+        image: imageObj,
+        draggable: true,
+		 dragBoundFunc: function (pos1) {
+                var X = pos1.x;
+                var Y = pos1.y;
+                if (X < minX2) {
+                    X = minX2;
+                }
+                if (X > maxX2) {
+                    X = maxX2;
+                }
+                if (Y < minY2) {
+                    Y = minY2;
+                }
+                if (Y > maxY2) {
+                    Y = maxY2;
+                }
+                return ({
+                    x: X,
+                    y: Y
+                });
+            }
+      });
+	  
+	var sliderback2 = new Kinetic.Rect({
+            x: BtnWidth/2 + slider.getWidth()/2 + slider2.getWidth()-slider2.getWidth()/1.6,
+			y: 0,
+            width: slider.getWidth()/5,
+            height: slider.getHeight()*4,
+            fill: '#bbb',
+            stroke: 'black',
+            strokeWidth: 3
+        });
+		
+	var ZoomText = new Kinetic.Text({
+            x: slider2.getX(),
+            y: slider2.getY()+sliderback2.getHeight()+5,
+            text: 'Zoom',
+            fontSize: 18,
+            fontFamily: 'Arial',
+            width:slider.getWidth() ,
+            align: 'center',    
+            fill: 'white'
+        });	
+
+	  layer2 = new Kinetic.Layer();
+	  
+	  
+	  layer2.add(sliderback2);
+	  layer2.add(slider2);
+	  layer2.add(ZoomText);
+	  stage.add(layer2);
+	  
+	  
+	 var posy2 = slider2.getPosition().y;
+	  
+		var height=slider2.getHeight();
+		var width = slider2.getWidth();
+        var minX2=slider2.getX();
+        var maxX2=slider2.getX();
+        var minY2=sliderback2.getY();
+        var maxY2=sliderback2.getY()+slider2.getHeight()*3;
+
+		slider2.on('dragmove',function(){
+			if(slider2.getPosition().y != null)
+			socket.emit('zoom', devarray, 250 + (posy2 - slider2.getPosition().y));
+		});
+	}
+	
+var StrobeSlider = function(){	
+		var stage1 = new Kinetic.Stage({
+    container: 'paper3',
+    width: screenWidth,
+    height: bottomSlider,
+  });
+
+  imageObj2.onload = function(){
+    var slider3 = new Kinetic.Image({
+        x: BtnHeight/1.5*2,
+        y: 0,
+        width: BtnHeight/1.5,
+        height: BtnWidth/2,
+		image: imageObj2,
+        draggable: true,
+		 dragBoundFunc: function (pos) {
+                var X = pos.x;
+                var Y = pos.y;
+                if (X < minX3) {
+                    X = minX3;
+                }
+                if (X > maxX3) {
+                    X = maxX3;
+                }
+                if (Y < minY3) {
+                    Y = minY3;
+                }
+                if (Y > maxY3) {
+                    Y = maxY3;
+                }
+                return ({
+                    x: X,
+                    y: Y
+                });
+            }
+      });
+	  
+	      var sliderback3 = new Kinetic.Rect({
+            x: screenWidth/10,
+			y: slider3.getHeight()-slider3.getHeight()/1.6,
+            width: slider3.getWidth()*8,
+            height: slider3.getHeight()/5,
+             fill: '#bbb',
+            stroke: 'black',
+            strokeWidth: 3
+        });
+		
+		var StrobeText = new Kinetic.Text({
+            x: sliderback3.getX()+sliderback3.getWidth()/2.2,
+            y: slider3.getY(),
+            text: 'Strobe',
+            fontSize: 18,
+            fontFamily: 'Arial',
+            width:slider3.getWidth() ,
+            align: 'center',    
+            fill: 'white'
+        });	
+
+	  var layer1 = new Kinetic.Layer();
+	  
+	  
+	  layer1.add(sliderback3);
+	  layer1.add(StrobeText);
+	  layer1.add(slider3);
+	  stage1.add(layer1);
+	  
+		var posx3 = slider3.getPosition().x;
+		
+        var minY3=slider3.getY();
+        var maxY3=slider3.getY();
+        var minX3=sliderback3.getX();
+        var maxX3 =sliderback3.getX()+slider3.getWidth()*7;
+
+		
+		
+		 slider3.on('dragmove', function() {
+				if(posx3 > slider3.getPosition().x){
+					strobe = 100 + (slider3.getPosition().x - posx3);
+				}
+				else{
+					strobe = 100 - (posx3 - slider3.getPosition().x);
+				}
+				if(slider3.getPosition().x != posx3)
+				socket.emit('strobe', devarray, strobe);	
+				
+		});
+		}
+	}
+StrobeSlider();	
+var FrequencySlider = function(){
+	var stage1 = new Kinetic.Stage({
+    container: 'paper3',
+    width: screenWidth,
+    height: bottomSlider,
+  });
+  
+	
+    var slider4 = new Kinetic.Image({
+        x: BtnHeight/1.5*2,
+        y: 0,
+        width: BtnHeight/1.5,
+        height: BtnWidth/2,
+		image: imageObj2,
+        draggable: true,
+		 dragBoundFunc: function (pos) {
+                var X = pos.x;
+                var Y = pos.y;
+                if (X < minX1) {
+                    X = minX1;
+                }
+                if (X > maxX1) {
+                    X = maxX1;
+                }
+                if (Y < minY1) {
+                    Y = minY1;
+                }
+                if (Y > maxY1) {
+                    Y = maxY1;
+                }
+                return ({
+                    x: X,
+                    y: Y
+                });
+            }
+      });
+	  
+	      var white1 = new Kinetic.Rect({
+            x: screenWidth/10,
+			y: slider4.getHeight()-slider4.getHeight()/1.5,
+            width: slider4.getWidth()*8,
+            height: slider4.getHeight()/5,
+             fill: '#bbb',
+            stroke: 'black',
+            strokeWidth: 3
+        });
+
+		var PlaybackText = new Kinetic.Text({
+            x: white1.getX()+white1.getWidth()/2.6,
+            y: slider4.getY(),
+            text: 'Playback Speed',
+            fontSize: 18,
+            fontFamily: 'Arial',
+            width:slider4.getWidth()*2,
+            align: 'center',    
+            fill: 'white'
+        });	
+		
+	  var layer1 = new Kinetic.Layer();
+	  
+	  
+	  layer1.add(white1);
+	  layer1.add(PlaybackText);
+	  layer1.add(slider4);
+	  stage1.add(layer1);
+	  
+		var posx = slider4.getPosition().x;
+		
+        var minY1=slider4.getY();
+        var maxY1=slider4.getY();
+        var minX1=white1.getX();
+        var maxX1 =white1.getX()+slider4.getWidth()*7;
+
+		
+		
+		 slider4.on('dragmove', function() {
+				if(posx > slider4.getPosition().x){
+					frequency = 100 + (slider4.getPosition().x - posx);
+				}
+				else{
+					frequency = 100 - (posx - slider4.getPosition().x);
+				}
+				
+				socket.emit('frequency',devarray, frequency);	
+		});
+}	
+		
+	
+	
+	
+var paper;
+
+paper = Raphael("paper1", screenWidth, screenHeight);
+paper.canvas.style.display = "block";
+var background = paper.image('/img/design.jpg',0,0,screenWidth,screenHeight);
+  
+  paper.text(titlex, titley, "LightControl").attr({fill: "white","font-size": (screenHeight/20),"font-family": "arial",'font-weight': "bold"});
+
+	var rowNo = 3;
+
+	var colNo = 2;
+
+
+	var rowArray = [];
+
+	var colArray = [];
+
+	rowArray[0] = BeginY;
+	for (var i=1; i< rowNo; i++)
+
+		rowArray[i] = BtnHeight + BtnHeight/2.5 + rowArray[i-1];
+
+		colArray[0] = BeginX;
+	for (var i=1; i<colNo; i++)
+
+		colArray[i] = BtnWidth + BtnWidth/3 + colArray[i-1];
+
+var selbut = paper.image('/img/selbut.png',colArray[1],rowArray[2],BtnWidth,BtnHeight);
+		
+var controlBtn = paper.Button({x:colArray[1],y:rowArray[2],width:BtnWidth,height:BtnHeight,r:10.,textAttrs:{'font-size':fontsize,'font-weight': "bold"},str:'Selection'}).attr({'opacity':0});
+
+controlBtn.attr({ stroke: 'black', 'stroke-width': 1,  });
+
+controlBtn.onClick =function(){
+	paper.remove();
+	layer2.remove();
+	layer.remove();
+
+	if(cBox.isChecked && on == false){
+				on = true;
+			}
+		   
+	if(!cBox.isChecked && on)
+	{
+		on = false;
+	}
+	cBox.uncheck();
+	
+	socket.emit('controlpage',devarray);
+	
+	ControlPage();
+}
+
+
+
+var stopbut = paper.image('/img/paubut.png',colArray[1],rowArray[1],BtnWidth,BtnHeight);
+
+var stopBtnback = paper.rect(colArray[1],rowArray[1],BtnWidth,BtnHeight).attr({r:10.,"fill":'#b3ffcc'});
+stopBtnback.hide();
+
+var stoptext = paper.text(colArray[1]+BtnWidth/2,rowArray[1]+BtnHeight/2, 'Stop').attr({'font-size':fontsize,'font-weight': "bold"});
+
+
+var stopBtn = paper.Button({x:colArray[1],y:rowArray[1],width:BtnWidth,height:BtnHeight,bgColor:'lightgreen',r:10.,textAttrs:{'font-size':fontsize,'font-weight': "bold"},str:''}).attr({'opacity':0});
+
+	stopBtn.onClick =function(){
+
+			socket.emit("stop");
+			stopbut.hide();
+			stopBtnback.show();
+			setTimeout(function(){stopBtnback.hide();stopbut.show();}, 200);				
+		}
+
+
+var recbut = paper.image('/img/rec4.png',colArray[0],rowArray[0],BtnWidth,BtnHeight);
+
+var recordBtnback = paper.rect(colArray[0],rowArray[0],BtnWidth,BtnHeight).attr({r:10.,"fill":"#FF8C74"});
+
+var rectext = paper.text(colArray[0]+BtnWidth/2,rowArray[0]+BtnHeight/2, 'Record').attr({'font-size':fontsize,'font-weight': "bold"});
+
+if(!Recording)
+recordBtnback.hide();
+else
+rectext.attr({text: 'Pause'});
+
+var recordBtn = paper.Button({x:colArray[0],y:rowArray[0],width:BtnWidth,height:BtnHeight,r:10.,bgColor:'white',str:''}).attr({'opacity':0});
+
+
+
+
+recordBtn.onClick =function(){
+	if(Recording){
+		recordBtnback.hide();
+		Recording = false;
+		socket.emit('pauseRec');	
+		rectext.attr({text: 'Record'});
+		
+	}else{
+		recordBtnback.show();
+		Recording = true;
+		
+		socket.emit('record');	
+		rectext.attr({text: 'Pause'});
+	}
+}
+
+var savebut = paper.image('/img/savebut.png',colArray[0],rowArray[1],BtnWidth,BtnHeight);
+
+var saveBtn = paper.Button({x:colArray[0],y:rowArray[1],width:BtnWidth,height:BtnHeight,r:10.,textAttrs:{'font-size':fontsize,'font-weight': "bold"},str:'Save'}).attr({'opacity':0});
+
+var fileName = "File1";
+
+saveBtn.onClick =function(){
+// Handle save button request
+
+          fileName = prompt("Please enter file name", fileName);
+
+          socket.emit("save", fileName);
+
+	}
+	var filebut = paper.image('/img/filebut.png',colArray[0],rowArray[2],BtnWidth,BtnHeight);
+	
+	var loadBtn = paper.Button({x:colArray[0],y:rowArray[2],width:BtnWidth,height:BtnHeight,r:10.,textAttrs:{'font-size':fontsize,'font-weight': "bold"},str:'Files'}).attr({'opacity':0});
+
+	var playbut = paper.image('/img/playbut.png',colArray[1],rowArray[0],BtnWidth,BtnHeight);
+	
+	var playBtnback = paper.rect(colArray[1],rowArray[0],BtnWidth,BtnHeight).attr({r:10.,"fill":"#4dff88", "cursor":"pointer"});
+	
+	var playtext = paper.text(colArray[1]+BtnWidth/2,rowArray[0]+BtnHeight/2, 'Play').attr({'font-size':fontsize,'font-weight': "bold"});
+	
+	if(!play)
+	playBtnback.hide();
+	else
+	playtext.attr({text: 'Pause'});
+	
+	
+	var playBtn = paper.Button({x:colArray[1],y:rowArray[0],width:BtnWidth,height:BtnHeight,bgColor:'#01D300',r:10.,str:''}).attr({'opacity':0});
+	
+	playBtn.onClick =function(){
+		if(play == false){
+			playBtnback.show();
+			socket.emit('play');
+			FrequencySlider();
+			playtext.attr({text: 'Pause'});
+			play = true;
+		}
+		else{
+			playtext.attr({text:'Play'});
+			playBtnback.hide();
+			socket.emit('pausePlay');
+			play = false;
+		}
+		socket.on('endplayback',function(){
+				var stage1 = new Kinetic.Stage({
+					container: 'paper3',
+					width: 0,
+					height: 0,
+				});
+				play = false;
+				cBox.uncheck();
+				Display();	
+			});
+	}	
+
+
+var cBox = paper.CheckBox({x:BeginX,y:BeginY/5,dim:2})
+cBox.attr({fill:'blue',str:'Click for Movement'});
+	
+var movementInstructions = paper.image('/img/instruct.png',BeginX,BeginY/5,screenWidth/2,screenWidth/2);	
+
+
+
+var moveBtn = paper.Button({x:BeginX,y:BeginY/5,width:screenWidth/2,height:screenWidth/2,bgColor:'yellow',textAttrs:{'font-size':fontsize,'font-weight': "bold"},str:''}).attr({'opacity':1});	
+
+var movetext = paper.text(BeginX+screenWidth/4,BeginY/5+screenWidth/4,'Click for Movement').attr({'font-size':25,'font-weight':'bold'}); 
+
+if(firstmove){
+movetext.hide();
+moveBtn.hide();
+}
+
+moveBtn.onClick = function(){
+	if(firstmove){
+		moveBtn.show();
+		movetext.show();
+		firstmove = false;
+	}
+
+	if(move == false)
+	{
+		movetext.attr({text:'Moving Lights'});
+		cBox.check();
+		move = true;
+		movementeffect();	
+	}
+	else{
+		move = false;
+		movetext.attr({text:'Click for Movement'});
+		cBox.uncheck();
+	}	
+}
+
+
+var movementeffect = function(){
+	if(move){
+		moveBtn.animate({ fill: colmove[movecount] }, 3000);
+		movecount++;
+		if(movecount == 7)movecount = 0;
+		setTimeout(function(){movementeffect();}, 4000);	
+	}
+}
+
+
+
+if(on){
+	cBox.check();
+}
+
+
+// Handle load button request
+
+      loadBtn.onClick = function() {
+	  
+          var fileNames = [];
+
+          socket.on("fileNames", function(fileName) {
+
+            fileNames.push(fileName);
+
+          })
+
+ // when the last file has been sent from the server
+
+          socket.on("endFileNames", function() {
+            displayLoad(fileNames); // display the file load list box
+
+          })
+
+          socket.emit("load"); // start the load procedure
+
+      }
+	  
+	  function componentToHex(c) {
+			var hex = c.toString(16);
+			return hex.length == 1 ? "0" + hex : hex;
+		}
+	  
+	  
+	  var onBtn = paper.image('/img/onbutton.png',sidebuttonx+BtnWidth/7,sidebuttony + BtnHeight*2,BtnWidth/2,BtnHeight);
+	  
+	  var onBtn = paper.Button({x:sidebuttonx+BtnWidth/7,y:sidebuttony + BtnHeight*2,width:BtnWidth/2,height:BtnHeight,r:10.,bgColor: "yellow", textAttrs:{'font-size':fontsize,'font-weight': "bold"},str:'On'});
+	  onBtn.hide();
+	  
+	  onBtn.onClick = function(){
+			socket.emit('on',devarray);	
+	  }
+	  
+	  
+	  var colbut = paper.image('/img/colour2.png',sidebuttonx-BtnWidth/8,sidebuttony+BtnHeight/5,BtnWidth,BtnHeight);
+	  
+	  var ColourBtnback = paper.rect(sidebuttonx - BtnWidth/8,sidebuttony+BtnHeight/5,BtnWidth,BtnHeight).attr({r:10.,"fill":"plum", "cursor":"pointer"});
+	  ColourBtnback.hide();
+	  
+	  var colourtext = paper.text(sidebuttonx+BtnWidth/2.6,sidebuttony+BtnHeight/2+ BtnHeight/5, 'Colour').attr({'fill':'black','font-size':fontsize,'font-weight': "bold"});	
+	  
+	  var ColourBtn = paper.Button({x:sidebuttonx,y:sidebuttony,width:BtnWidth,height:BtnHeight,r:10.,bgColor: "white",textAttrs:{'font-size':fontsize,'font-weight': "bold"},str:''});
+	  ColourBtn.hide();
+	  	  
+	  	
+ColourBtn.onClick =function(){
+	var colour = [];
+	if(colourclicked == false){
+	colourtext.attr({text:'Back'});
+	ColourBtnback.show();
+	socket.emit('getcolour',devarray);
+	socket.on('currentcolour', function(r,g,b){
+	colour = [r,g,b];
+	
+	colourclicked = true;
+
+		hw = new HueWheel('huewheel', {
+			onChange:				update,
+			saturation:				1.0,
+			lightness:				0.5,
+			colorSpace:				'hsl',
+
+			diameter:				500,
+			shadowBlur:				7,
+			changeSaturation:		false,
+			changeLightness:		false,
+			showColor:				false,
+			colorSpotWidth:			0.7,
+			colorSpotBorder:		1,
+			colorSpotBorderColor:	'#333',
+			quality:				2,
+			rgb:					colour,
+
+			hueKnobSize:			0.14,
+			hueKnobColor:			'#ffc',
+			lightKnobColor:			'#ff0',
+			hueKnobColorSelected:	'#fff',
+			hueKnobShadow:			false,
+			lightnessKnobColorSelected:	'#f00',
+			lightnessRingClickable:	false,
+
+			useKeys:				true,
+			hueKeyDelta:			2,
+			saturationKeyDelta:		1,
+			lightnessKeyDelta:		1,
+			shiftKeyFactor:			10
+		});
+
+		});
+	function update(e) {
+		//spot.style.backgroundColor = 'rgb(' + e.r + ',' + e.g + ',' + e.b + ')';
+		socket.emit('colour',devarray,e.r,e.g,e.b);
+	
+	}
+
+
+	//ColourDisplay();
+	
+	if(cBox.isChecked && on == false){
+		on = true;
+	}
+	
+	if(!cBox.isChecked && on)
+	{
+	on = false;
+	}
+	}
+	else{
+	ColourBtnback.hide();
+	colourtext.attr({text:'Colour'});
+	colourclicked = false;
+	$('#containerwheel').load(document.URL +  ' #containerwheel');
+	}
+
+}				
+	
+	
+		
+// Display the files that can be loaded
+
+  displayLoad = function(fileNames) {
+
+		if(cBox.isChecked && on == false){
+			on = true;
+		}else
+	{
+		on = false;
+	}
+       
+	   
+	   	var stage1 = new Kinetic.Stage({
+			container: 'paper3',
+			width: 0,
+			height: 0,
+		  });
+  
+		var stage = new Kinetic.Stage({
+			container: 'paper2',
+			width: 0,
+			height: 0,
+		  });
+		  
+
+		background = paper.image('/img/design.jpg',0,0,screenWidth,screenHeight);
+
+
+        var maxFileBtns = 10;
+
+        var starty = BeginY/5;
+		var startx = BeginX;
+
+        
+		var fontSize = 25;
+        // Set up row and column positions for file text boxes and buttons
+
+        var rowNo = 10;
+
+        var columnWidth = screenWidth/3.5;
+
+        var rowWidth = screenHeight/(rowNo*1.5);
+
+        
+
+        var rowArray = [];
+
+        var colArray = [];
+
+        
+			rowArray[0] = starty + rowWidth;
+        for (var i=1; i< rowNo; i++)
+
+            rowArray[i] = rowArray[i-1]+ rowWidth;
+
+			
+        
+
+        var currentFile = null;
+
+       
+
+// file and scroll buttons
+
+        var fileBtns = [];
+
+        var fileBtnsTxt = [];
+
+        var fileNameIndex = 0;
+
+        var fileNamesNoSuffix = [];
+
+        var fileBtnUp = null;
+
+        var fileBtnUpTxt = null;
+
+        var fileBtnDown = null;
+
+        var fileBtnDownTxt = null;
+
+        var fileBtnSubmit = null;
+
+
+
+// the File class
+
+        function File() {
+
+            this.name = null;
+
+            this.selectState = false;   // file selected?
+
+        }
+
+
+
+// an array of file objects for each file
+
+        var files = [];
+
+        
+
+        for (var i=0; i<fileNames.length; i++) {
+
+            files[i] = new File();
+
+            files[i].name = fileNames[i];
+
+            files[i].selectState = false;
+
+        }
+
+
+
+// update the display of the file buttons after a file status change
+
+        updateFileButtons = function() {
+
+            for (var i=0; i<maxFileBtns && i<fileNames.length; i++) {
+
+                fileBtnsTxt[i].attr({"font-size": fontSize, 'text-anchor': 'start', 'text':files[1*fileNameIndex+i].name});
+
+                if (files[i+fileNameIndex].selectState == true)
+
+                  fileBtns[i].attr({"fill":"lightblue"});        // show selected track
+
+                else
+
+                  fileBtns[i].attr({"fill":"lightgrey"});
+
+            }
+
+        }
+
+        
+
+        
+
+// The file list box for loading a file on server
+
+// The 'scroll up' text box
+
+        fileBtnUp = paper.rect(startx,starty,2*columnWidth,rowWidth).
+
+        attr({"fill":"plum", "cursor":"pointer"});
+		
+		 fileBtnUpTxt = paper.text(startx+10,starty+22, "Scroll Up").
+
+                                attr({"font-size": fontSize, 'font-weight': "bold", 'text-anchor': 'start'});
+        
+
+//Handle scroll up request
+
+        fileBtnUp.click(function() {
+
+            if (fileNameIndex > 0) {
+
+                fileNameIndex--;
+
+                updateFileButtons();
+
+            }
+
+        });
+
+
+
+// Initialize the files array
+
+        for (var i=0; i<fileNames.length; i++) {
+
+            files[i].name = fileNames[i].substr(0,(fileNames[i].length-4));
+
+        }
+
+
+
+// Lay out the selectable file text boxes
+
+      
+
+        
+
+        for (var i=0; i<10; i++) {
+
+            fileBtns[i] = paper.rect(startx,rowArray[i],2*columnWidth,rowWidth).
+
+                                    attr({"fill":"lightgrey", "cursor":"pointer"});
+
+        }
+		
+		  for (var i=0; i<fileNames.length && i<10; i++) {
+
+            fileBtnsTxt[i] = paper.text(startx+10,rowArray[i]+22, files[i].name).
+
+                                        attr({"font-size": fontSize, 'font-weight': "bold", 'text-anchor': 'start'});
+
+        }
+
+
+
+// The 'scroll down' text box
+
+        fileBtnDown = paper.rect(startx,rowArray[9]+rowWidth,2*columnWidth,rowWidth).
+
+                                    attr({"fill":"plum", "cursor":"pointer"});
+
+        
+		fileBtnDownTxt = paper.text(startx+10,rowArray[9]+22+rowWidth, "Scroll Down").
+
+                                    attr({"font-size": fontSize,'font-weight': "bold", 'text-anchor': 'start'});
+
+//Handle scroll down request
+
+        fileBtnDown.click(function() {
+
+            if (fileNameIndex<(fileNames.length-maxFileBtns)) {
+
+                fileNameIndex++;
+
+                updateFileButtons();
+
+            }
+
+        });
+
+
+
+// Do the file button select work
+
+        handleFileSelect = function(btnNumber) {
+
+            if (files.length > btnNumber) {
+
+                if (files[1*fileNameIndex+btnNumber].selectState==false) { //Is the file selected?
+
+                    for (var i=0; i<fileNames.length; i++)
+
+                       files[i].selectState = false;                       //deselect all files
+
+                    files[1*fileNameIndex+btnNumber].selectState=true;     //Indicate selected file
+
+                    currentFile = fileNameIndex+btnNumber;                 //Set the current file
+
+                    updateFileButtons();                                   //update selet status
+
+                }
+
+            }
+
+            
+
+        }
+
+
+
+//Handle file select requests
+
+        fileBtns[0].click(function() {
+
+            handleFileSelect(0);
+
+        });
+
+        
+
+        fileBtns[1].click(function() {
+
+            handleFileSelect(1);
+
+        });
+
+        
+
+        fileBtns[2].click(function() {
+
+            handleFileSelect(2);
+
+        });
+
+                          
+
+        fileBtns[3].click(function() {
+
+            handleFileSelect(3);
+
+        });
+
+        
+
+        fileBtns[4].click(function() {
+
+            handleFileSelect(4);
+
+        });
+
+        
+
+        fileBtns[5].click(function() {
+
+            handleFileSelect(5);
+
+        });
+
+        
+
+        fileBtns[6].click(function() {
+
+            handleFileSelect(6);
+
+        });
+
+        
+
+        fileBtns[7].click(function() {
+
+            handleFileSelect(7);
+
+        });
+
+        
+
+        fileBtns[8].click(function() {
+
+            handleFileSelect(8);
+
+        });
+
+        
+
+        fileBtns[9].click(function() {
+
+            handleFileSelect(9);
+
+        });
+
+        
+
+        submitBtn = paper.Button({x:(startx+columnWidth*2), y:rowArray[5], width:columnWidth, height:rowWidth, bgColor: "plum",
+
+                                              textAttrs:{'font-size':fontSize, 'font-weight': "bold"}, str: "SUBMIT"});
+
+                                              
+
+// Handle file submit request by user
+
+        submitBtn.onClick = function() {
+
+            if (currentFile !== null) {
+
+                 socket.emit("fileLoad", files[currentFile].name+".xml");
+
+				 paper.canvas.style.display = "none";
+                 //paper.clear();                             // clear the file load canvas
+				 cBox.uncheck();
+                 Display();                       // clear the old display state - new song
+
+            }
+
+        }
+
+                                              
+
+        cancelBtn = paper.Button({x:(startx+columnWidth*2), y:rowArray[6], width:columnWidth, height:rowWidth, bgColor: "plum",
+
+                                    textAttrs:{'font-size':fontSize, 'font-weight': "bold"}, str: "CANCEL"});
+
+                                    
+
+// Handle file cancel request by user
+
+        cancelBtn.onClick = function() {
+			paper.canvas.style.display = "none";          // clear the file load canvas
+			cBox.uncheck();
+            Display();           // get back to the previous display
+
+        }
+
+    
+	
+	     deleteBtn = paper.Button({x:(startx+columnWidth*2), y:rowArray[7], width:columnWidth, height:rowWidth, bgColor: "plum",
+
+                                    textAttrs:{'font-size':fontSize, 'font-weight': "bold"}, str: "DELETE"});
+
+                                    
+
+// Handle file cancel request by user
+
+        deleteBtn.onClick = function() {
+			socket.emit('fileDelete',files[currentFile].name+".xml");
+			paper.canvas.style.display = "none";                   // clear the file load canvas
+			cBox.uncheck();
+            Display();           // get back to the previous display
+
+        }
+
+    }
+	
+//orientation section
+	
+var Orientation = {
+
+	respondToMobileOrient: function(y2,z2,x2) {
+
+		y = y2;
+
+		x = x2;
+		
+		z = z2;
+		
+			
+		 if(cBox.isChecked && tick) {    
+			if(devarray.length > 3){
+				if(tick2){
+					 var dify = y - oldy;
+					 var difz = z - oldz;
+					 if(difz < 1 && difz > -1) z = oldz; // threshold for light so it doesn't keep fluctuating
+					 if(dify < 1 && dify > -1) y = oldy;
+					 socket.emit("orientation",devarray, y, z, x);
+					 oldz = z;
+					 oldy = y;
+					 tick = false;
+					 }
+			 }
+			 else{
+					 var dify = y - oldy;
+					 var difz = z - oldz;
+					 if(difz < 1 && difz > -1) z = oldz; // threshold for light so it doesn't keep fluctuating
+					 if(dify < 1 && dify > -1) y = oldy;
+					 socket.emit("orientation",devarray, y, z, x);
+					 oldz = z;
+					 oldy = y;
+					 tick = false;
+			 }
+		   }
+	  }
+}
+
+ 
+
+var mobileDevice = {
+	
+	initialize: function() {
+
+  // var success = screen.lockOrientation("portrait-primary");
+
+	  window.addEventListener("deviceorientation", this.handleOrientation);
+
+// capture device motion
+
+//	  window.addEventListener("devicemotion", this.handleMotion);
+
+  	},
+
+
+
+	handleOrientation: function(event)  {
+		
+  	  var absolute = event.absolute;
+	
+  	  var alpha    = event.alpha;		// rotation around z axis (0 to 360) (swivel)
+
+  	  var beta     = event.beta;		// rotation around x axis (-180 to +180) (tilt fwd/back)
+
+  	  var gamma    = event.gamma;		// rotation around y axis (-90 to 90) (left/right)
+			
+		Orientation.respondToMobileOrient(gamma,alpha,beta);
+	}
+	}
+	
+	mobileDevice.initialize();
+	
+	
+	  }
+
+	  
+
+var ControlPage = function(){
+
+
+ var paper;
+//background
+ paper = Raphael("paper1", screenWidth, screenHeight);
+ var background = paper.image('/img/design.jpg',0,0,screenWidth,screenHeight);
+ paper.text(titlex, titley + titley/2, "Select \n Devices").attr({fill: "white","font-size": (screenHeight/20),"font-family": "arial",'font-weight': "bold"});
+
+ var devSelected = devarray;
+	//images
+	// need to load them in and relate to pictures
+	var rowBegin = screenWidth/4;
+	var rowValue = rowBegin;
+	var BeginHeight = screenHeight/10;
+	var columnNo = 0;
+	var imageWidthpos;
+	var imageHeigthPos;
+	
+	
+	
+ var displayLoad = function(devcount) {
+        // Determine dimensions of working window
+
+        var screenWidth = window.innerWidth;
+
+        var screenHeight = window.innerHeight;
+
+        
+        var maxLightBtns = 14;
+
+        var listBoxOffset = screenHeight*5/100;
+
+        
+        // Set up row and column positions for file text boxes and buttons
+
+        var rowNo = 3;
+
+        var colNo = 5;
+
+		var BeginX = screenWidth/6.7;
+		var BeginY = screenWidth/4;
+		var BeginX2 = screenWidth/4.5;
+		
+        var columnWidth = screenWidth/colNo/2;
+
+        var rowWidth = (screenHeight/10);
+
+       
+        var rowArray = [];
+		
+		var colAura = [];
+
+        var colArray = [];
+
+		rowArray[0] = BeginY;
+        for (var i=1; i< rowNo; i++)
+
+            rowArray[i] = rowWidth + rowWidth/2 + rowArray[i-1];
+
+			colAura[0] = BeginX2;
+			
+			for (var i=1; i<4; i++)
+				colAura[i] = columnWidth + columnWidth/2 + colAura[i-1]; 
+			
+			colArray[0] = BeginX;
+        for (var i=1; i<colNo; i++)
+
+            colArray[i] = columnWidth + columnWidth/2 + colArray[i-1];
+
+
+        var currentLight = null;
+
+       
+// file and scroll buttons
+
+        var lightBtns = [];
+		
+		var num = 0;
+
+        var lightBtnsTxt = [];
+
+        var lightNameIndex = 0;
+
+        var lightNamesNoSuffix = [];
+
+        var lightBtnUp = null;
+
+        var lightBtnUpTxt = null;
+
+        var lightBtnDown = null;
+
+        var lightBtnDownTxt = null;
+
+        var lightBtnSubmit = null;
+		
+		var LightsSelected = devarray;
+
+
+
+// the Light class // might come back and give them names
+
+        function Light() {
+
+            this.number = null;
+
+            this.selectState = false;   // file selected?
+
+        }
+
+
+
+// an array of file objects for each file
+
+        var lights = [];
+
+
+        for (var i=0; i<30; i++) {
+
+            lights[i] = new Light();
+
+            lights[i].number = i;
+
+            lights[i].selectState = false;
+
+        }
+
+		for(var i = 0; i < devarray.length; i++){
+			lights[devarray[i]].selectState = true;
+		}
+
+		 updateAuraButtons = function() {
+
+            for (var i=0; i< 4; i++) {
+
+                if (lights[i].selectState == true)
+
+                  lightBtns[i].attr({"fill":"lightgrey","opacity":0.6});        // show selected track
+
+               else
+
+                  lightBtns[i].attr({"fill":"lightgrey", "cursor":"pointer", "opacity":0,"stroke":"black","stroke-width":"2" });
+
+            }
+
+        }   
+		
+
+// update the display of the file buttons after a file status change
+
+        updateLightButtons = function() {
+
+            for (var i=4; i<maxLightBtns && i<devcount; i++) {
+
+                if (lights[i+lightNameIndex].selectState == true)
+
+                  lightBtns[i].attr({"fill":"lightgrey","opacity":0.6});        // show selected track
+
+               else
+
+                  lightBtns[i].attr({"fill":"lightgrey", "cursor":"pointer", "opacity":0,"stroke":"black","stroke-width":"2" });
+
+            }
+        }   
+		
+		
+		deselect = function(){
+			   for (var i=4; i<maxLightBtns && i<devcount; i++) {
+
+                if (lights[i+lightNameIndex].selectState == true)
+
+                  lightBtns[i].attr({"fill":"lightgrey", "cursor":"pointer", "opacity":0,"stroke":"black","stroke-width":"2" });
+            }
+		}
+		
+
+		   updateLightButtonsNumber = function() {
+            for (var i=4; i<maxLightBtns+4; i++) {
+
+                lightBtnsTxt[i].attr({"font-size": 17, 'text-anchor': 'start', 'text':"Light" + lights[lightNameIndex+i].number});
+				if (lights[i+lightNameIndex].selectState == true)
+
+                  lightBtns[i].attr({"fill":"lightgrey","opacity":0.6});        // show selected track
+
+               else
+
+                  lightBtns[i].attr({"fill":"lightgrey", "cursor":"pointer", "opacity":0,"stroke":"black","stroke-width":"2" });
+
+            }
+			
+
+		}
+		
+		
+
+// The file list box for loading a file on server
+
+// The 'scroll up' text box
+
+		
+		var uparrowback = paper.rect(colArray[4]+columnWidth*1.2,rowArray[1]+rowWidth/1.5,columnWidth,rowWidth).
+
+        attr({"fill":"lightgreen", "cursor":"pointer","opacity":0.9});
+		
+		var uparrow = paper.image('/img/uparrow.png',colArray[4]+columnWidth*1.2,rowArray[1]+rowWidth/1.5,columnWidth,rowWidth);
+		
+		lightBtnUp = paper.rect(colArray[4]+columnWidth*1.2,rowArray[1]+rowWidth/1.5,columnWidth,rowWidth).
+
+        attr({"fill":"lightgreen", "cursor":"pointer","opacity":0});
+		
+        
+		
+		
+
+//Handle scroll up request
+
+        lightBtnUp.click(function() {
+			if(lightNameIndex < 15 ){
+						deselect();
+						lightNameIndex += 5;
+						updateLightButtonsNumber();
+					}
+				});
+
+
+
+// Initialize the files array
+
+        for (var i=0; i<30; i++) {
+
+            lights[i].number = i;
+
+        }
+
+// Lay out the selectable file text boxes
+		var text = 0;			
+				
+				for (var i=0; i<colAura.length; i++) {
+					
+					var image = paper.image('/img/aura.jpg',Math.round(colAura[i]),Math.round(rowArray[0]),columnWidth,rowWidth);
+					
+					lightBtns[num] = paper.rect(Math.round(colAura[i]),Math.round(rowArray[0]),columnWidth,rowWidth).
+											attr({fill:"white", "opacity":0,"stroke":"white","stroke-width":"2"});
+											
+					  var rect = paper.rect(Math.round(colAura[i]),Math.round(rowArray[0]),columnWidth,rowWidth).
+
+											attr({fill:"none","stroke":"white","stroke-width":"2"});
+											
+					lightBtnsTxt[text] = paper.text(Math.round(colAura[i]) + columnWidth/5,Math.round(rowArray[0]) + rowWidth + rowWidth/5, "Light"+lights[text].number).
+										 attr({"fill":"white","font-size": 17, 'font-weight': "bold", 'text-anchor': 'start'});
+					text++;
+					num++;
+								
+				}
+				
+				for(var n = 1; n < rowArray.length; n ++)
+				{
+				
+				for (var i=0; i<colArray.length; i++) {
+					
+					var image = paper.image('/img/dimmer.jpeg',Math.round(colArray[i]),Math.round(rowArray[n]),columnWidth,rowWidth);
+					
+					lightBtns[num] = paper.rect(Math.round(colArray[i]),Math.round(rowArray[n]),columnWidth,rowWidth).
+											attr({fill:"white", "opacity":0,"stroke":"white","stroke-width":"2"});
+											
+											
+					  var rect = paper.rect(Math.round(colArray[i]),Math.round(rowArray[n]),columnWidth,rowWidth).
+
+											attr({fill:"none","stroke":"white","stroke-width":"2"});
+											
+					lightBtnsTxt[text] = paper.text(Math.round(colArray[i]) + columnWidth/6,Math.round(rowArray[n]) + rowWidth + rowWidth/5, "Light"+lights[text].number).
+										 attr({"fill":"white","font-size": 17, 'font-weight': "bold", 'text-anchor': 'start'});
+					text++;
+					num++;						
+				}					
+			}
+
+
+// The 'scroll down' text box
+
+		var downarrowback = paper.rect(colArray[0]-columnWidth*1.2,rowArray[1]+rowWidth/1.5,columnWidth,rowWidth).
+
+        attr({"fill":"lightgreen", "cursor":"pointer","opacity":0.9});
+		
+		var downarrow = paper.image('/img/downarrow.png',colArray[0]-columnWidth*1.2,rowArray[1]+rowWidth/1.5,columnWidth,rowWidth);
+		
+        
+        lightBtnDown = paper.rect(colArray[0]-columnWidth*1.2,rowArray[1]+rowWidth/1.5,columnWidth,rowWidth).
+
+                                    attr({"fill":"plum", "cursor":"pointer", "opacity":0});
+
+
+                                   
+
+
+//Handle scroll down request
+
+        lightBtnDown.click(function() {
+
+            if (lightNameIndex>4) {
+				deselect();
+				lightNameIndex -= 5;
+                updateLightButtonsNumber();
+            }
+        });
+
+
+
+// Do the file button select work
+
+        handleLightSelected = function(btnNumber) {
+
+            if (devcount > btnNumber && btnNumber > 3) {
+
+                if (lights[btnNumber + lightNameIndex].selectState==false) { 		
+
+                    lights[btnNumber+lightNameIndex].selectState=true;  
+					LightsSelected.push(btnNumber+lightNameIndex);   //add new light to list and update its display
+					devSelected = LightsSelected;
+                    updateLightButtons();   
+					}
+					else
+					{
+					lights[btnNumber+lightNameIndex].selectState=false;
+					var pos = LightsSelected.indexOf(btnNumber+lightNameIndex);  // remove light from list and unpdate selectState display
+					LightsSelected.splice(pos,1);
+					devSelected = LightsSelected;
+					updateLightButtons();   
+					}                               
+                }
+			
+			if (devcount > btnNumber && btnNumber < 4) {
+				 if (lights[btnNumber].selectState==false) { 		
+
+                    lights[btnNumber].selectState=true;  
+					LightsSelected.push(btnNumber);   //add new light to list and update its display
+					devSelected = LightsSelected;
+                    updateAuraButtons();   
+					}
+					else
+					{
+					lights[btnNumber].selectState=false;
+					var pos = LightsSelected.indexOf(btnNumber);  // remove light from list and unpdate selectState display
+					LightsSelected.splice(pos,1);
+					devSelected = LightsSelected;
+					updateAuraButtons();   
+					}                               
+                }
+			
+            }
+        
+	updateLightButtons();
+	updateAuraButtons();
+		
+//Handle file select requests
+
+        lightBtns[0].click(function() {
+
+            handleLightSelected(0);
+
+        });
+
+        
+
+        lightBtns[1].click(function() {
+
+            handleLightSelected(1);
+
+        });
+
+        
+
+        lightBtns[2].click(function() {
+
+            handleLightSelected(2);
+
+        });
+
+                          
+
+        lightBtns[3].click(function() {
+
+            handleLightSelected(3);
+
+        });
+
+        
+
+        lightBtns[4].click(function() {
+
+            handleLightSelected(4);
+
+        });
+
+        
+
+        lightBtns[5].click(function() {
+
+            handleLightSelected(5);
+
+        });
+
+        
+
+        lightBtns[6].click(function() {
+
+            handleLightSelected(6);
+
+        });
+
+        
+        lightBtns[7].click(function() {
+
+            handleLightSelected(7);
+
+        });
+
+        
+        lightBtns[8].click(function() {
+
+            handleLightSelected(8);
+
+        });
+     
+
+        lightBtns[9].click(function() {
+
+            handleLightSelected(9);
+
+        });
+		
+		 lightBtns[10].click(function() {
+
+            handleLightSelected(10);
+
+        });
+		
+		 lightBtns[11].click(function() {
+
+            handleLightSelected(11);
+
+        });
+		
+		 lightBtns[12].click(function() {
+
+            handleLightSelected(12);
+
+        });
+		
+		 lightBtns[13].click(function() {
+
+            handleLightSelected(13);
+
+        });
+}
+
+displayLoad(15);
+        
+
+                                              
+// Handle file submit request by user
+
+		var buttonWidth = screenWidth/3;
+		var buttonHeight = screenHeight/15;
+	
+
+		var stage1 = new Kinetic.Stage({
+			container: 'paper3',
+			width: 0,
+			height: 0,
+		});
+  
+    
+
+		var button = paper.Button({x:((screenWidth/2)-(buttonWidth/2)),y:screenHeight-(buttonHeight*2),width:buttonWidth,height:buttonHeight,r:10.,bgColor: "plum", textAttrs:{'font-size':(screenHeight/25),'font-weight': "bold"},str:'Control'})
+
+		button.attr({gradient: '90-#526c7a-#64a0c1', stroke: '#ddd', 'stroke-width': 5,  });
+
+		button.onClick = function(){
+			devarray = devSelected;
+			socket.emit('movementpage',devSelected);  // send devices selected to server
+			paper.canvas.style.display = "none";
+			//paper.clear();
+			Display();	
+			}
+
+		}
+	
+	Display(); // Display the movement page first
+//ControlPage();
+
+	});
+
+</script>
+ 	
+	<!-- Including the JS libraries that we use -->
+	<script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+
+	<!-- Socket.io library -->
+	<script src="/socket.io/socket.io.js"></script>
+
+	<!-- Main JavaScript file -->
+	</body>
+</html>

@@ -1,0 +1,452 @@
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=0.5, user-scalable=no,maximum-scale=0.5">
+	<head>
+		<meta charset="utf-8">
+		<title>ControlPage</title>
+	 
+	</head>
+
+		
+
+     <script src="/socket.io/socket.io.js"></script>
+
+ <script type="text/javascript" src= "raphael.js"> </script> 
+<script type="text/javascript" src= "raphaeltools.js"> </script>
+    
+
+  </head>
+
+
+
+   <body>
+
+<div id="paper1"> </div>
+
+<script>
+
+var screenWidth = window.innerWidth;
+var screenHeight = window.innerHeight;
+var halfscreenWidth = screenWidth/2;
+var devcount; //lights selected
+var numselected = -1;
+var devSelected = [];
+
+var socket = io();   
+
+
+socket.on('devices', function(devices){
+devcount = devices;
+
+
+
+//background
+var paper;
+paper = Raphael("paper1", screenWidth, screenHeight);
+ var background = paper.image('/img/design.jpg',0,0,screenWidth,screenHeight);
+ 	  
+
+	paper.text(((screenWidth/2)-(screenHeight/25)/3), (screenHeight/18), "Select \n Devices").attr({fill: "white","font-size": (screenHeight/20),"font-family": "arial",'font-weight': "bold"});
+
+	//images
+	// need to load them in and relate to pictures
+	var rowBegin = screenWidth/4;
+	var rowValue = rowBegin;
+	var BeginHeight = screenHeight/10;
+	var columnNo = 0;
+	var imageWidthpos;
+	var imageHeigthPos;
+	
+	
+	/*
+	var image = paper.image('/img/DMXLight.png', rowValue, BeginHeight, 100, 100)
+	button[i] = paper.Button({x:rowValue,y:BeginHeight,width:100,height:100,r:1,bgColor: 'white', textAttrs:{x:rowValue+(rowValue/4),y:BeginHeight+rowValue-(rowValue/3),'font-size':(screenHeight/25),'font-weight': "bold", fill: 'white'},str:'Light'+[i]});
+	button[i].attr({fill:image});
+	
+	*/
+	
+ var displayLoad = function(devcount) {
+        // Determine dimensions of working window
+
+        var screenWidth = window.innerWidth;
+
+        var screenHeight = window.innerHeight;
+
+        
+        var maxLightBtns = 10;
+
+        var listBoxOffset = screenHeight*5/100;
+
+        
+        // Set up row and column positions for file text boxes and buttons
+
+        var rowNo = 2;
+
+        var colNo = 5;
+
+		var BeginY = screenWidth/8;
+		var BeginX = screenWidth/5;
+
+        var columnWidth = screenWidth/colNo/2;
+
+        var rowWidth = (screenHeight/10);
+
+       
+        var rowArray = [];
+
+        var colArray = [];
+
+		rowArray[0] = BeginX;
+        for (var i=1; i< rowNo; i++)
+
+            rowArray[i] = rowWidth + rowWidth/2 + rowArray[i-1];
+
+			colArray[0] = BeginY;
+        for (var i=1; i<colNo; i++)
+
+            colArray[i] = columnWidth + columnWidth/2 + colArray[i-1];
+
+
+        var currentLight = null;
+
+        var fontSize = 11; //10*this.pixelRatio; // font size for buttons and check boxes Check this!!
+
+
+// file and scroll buttons
+
+        var lightBtns = [];
+
+        var lightBtnsTxt = [];
+
+        var lightNameIndex = 0;
+
+        var lightNamesNoSuffix = [];
+
+        var lightBtnUp = null;
+
+        var lightBtnUpTxt = null;
+
+        var lightBtnDown = null;
+
+        var lightBtnDownTxt = null;
+
+        var lightBtnSubmit = null;
+		
+		var LightsSelected = [];
+
+
+
+// the Light class // might come back and give them names
+
+        function Light() {
+
+            this.number = null;
+
+            this.selectState = false;   // file selected?
+
+        }
+
+
+
+// an array of file objects for each file
+
+        var lights = [];
+
+
+        for (var i=0; i<devcount; i++) {
+
+            lights[i] = new Light();
+
+            lights[i].number = i;
+
+            lights[i].selectState = false;
+
+        }
+
+
+
+// update the display of the file buttons after a file status change
+
+        updateLightButtons = function() {
+
+            for (var i=0; i<maxLightBtns && i<devcount; i++) {
+
+                lightBtnsTxt[i].attr({"font-size": 13, 'text-anchor': 'start', 'text':"Light" + lights[1*lightNameIndex+i].number});
+
+                if (lights[i+lightNameIndex].selectState == true)
+
+                  lightBtns[i].attr({"fill":"lightgrey","opacity":0.6});        // show selected track
+
+               else
+
+                  lightBtns[i].attr({"fill":"lightgrey", "cursor":"pointer", "opacity":0,"stroke":"black","stroke-width":"2" });
+
+            }
+
+        }   
+
+        
+
+// The file list box for loading a file on server
+
+// The 'scroll up' text box
+/*
+        lightBtnUpTxt = paper.text(1*colArray[1]+5,1*rowArray[0]+12, "Scroll Up").
+
+                                attr({"font-size": 13, 'font-weight': "bold", 'text-anchor': 'start'});
+
+        lightBtnUp = paper.rect(colArray[1],rowArray[0],2*columnWidth,rowWidth).
+
+        attr({"fill":"plum", "cursor":"pointer","opacity":0.9});
+
+        
+
+//Handle scroll up request
+
+        lightBtnUp.click(function() {
+
+            if (lightNameIndex > 0) {
+
+                lightNameIndex--;
+
+                updateLightButtons();
+
+            }
+
+        });
+
+*/
+
+// Initialize the files array
+
+        for (var i=0; i<devcount; i++) {
+
+            lights[i].number = i;
+
+        }
+
+// Lay out the selectable file text boxes
+		var text = 0;
+        for(var n = 0; n < rowArray.length; n ++)
+		{
+        for (var i=0; i<colArray.length; i++) {	
+            lightBtnsTxt[text] = paper.text(Math.round(colArray[i]) + columnWidth/4,Math.round(rowArray[n]) + rowWidth + rowWidth/5, "Light"+lights[text].number).
+								 attr({"fill":"white","font-size": 13, 'font-weight': "bold", 'text-anchor': 'start'});
+			text++;
+			}
+        }
+
+		var num = 0;
+		for(var n = 0; n < rowArray.length; n ++)
+		{
+        for (var i=0; i<colArray.length; i++) {
+			
+			var image = paper.image('/img/DMXLight.png',Math.round(colArray[i]),Math.round(rowArray[n]),columnWidth,rowWidth);
+			
+            lightBtns[num] = paper.rect(Math.round(colArray[i]),Math.round(rowArray[n]),columnWidth,rowWidth).
+                                    attr({fill:"white", "opacity":0,"stroke":"white","stroke-width":"2"});
+									num++;
+									
+			  var rect = paper.rect(Math.round(colArray[i]),Math.round(rowArray[n]),columnWidth,rowWidth).
+
+                                    attr({fill:"none","stroke":"white","stroke-width":"2"});
+						
+									
+									
+			
+		}
+ }
+
+/*
+// The 'scroll down' text box
+
+        lightBtnDownTxt = paper.text(1*colArray[1]+5,1*rowArray[11]+12, "Scroll Down").
+
+                                    attr({"font-size": 13,'font-weight': "bold", 'text-anchor': 'start'});
+
+        lightBtnDown = paper.rect(colArray[1],rowArray[11],2*columnWidth,rowWidth).
+
+                                    attr({"fill":"plum", "cursor":"pointer", "opacity":0.9});
+
+        
+*/
+//Handle scroll down request
+
+       /* lightBtnDown.click(function() {
+
+            if (lightNameIndex<(devcount-maxLightBtns)) {
+
+                lightNameIndex++;
+
+                updateLightButtons();
+
+            }
+
+        });*/
+
+
+
+// Do the file button select work
+
+        handleLightSelected = function(btnNumber) {
+
+            if (devcount > btnNumber) {
+
+                if (lights[btnNumber].selectState==false) { 		
+
+                    lights[btnNumber].selectState=true;  
+					LightsSelected.push(btnNumber);   //add new light to list and update its display
+					devSelected = LightsSelected;
+                    updateLightButtons();   
+					}
+					else
+					{
+					lights[btnNumber].selectState=false;
+					var pos = LightsSelected.indexOf(btnNumber);  // remove light from list and unpdate selectState display
+					LightsSelected.splice(pos,1);
+					devSelected = LightsSelected;
+					updateLightButtons();   
+					}                               
+                }
+            }
+        
+
+		
+//Handle file select requests
+
+        lightBtns[0].click(function() {
+
+            handleLightSelected(0);
+
+        });
+
+        
+
+        lightBtns[1].click(function() {
+
+            handleLightSelected(1);
+
+        });
+
+        
+
+        lightBtns[2].click(function() {
+
+            handleLightSelected(2);
+
+        });
+
+                          
+
+        lightBtns[3].click(function() {
+
+            handleLightSelected(3);
+
+        });
+
+        
+
+        lightBtns[4].click(function() {
+
+            handleLightSelected(4);
+
+        });
+
+        
+
+        lightBtns[5].click(function() {
+
+            handleLightSelected(5);
+
+        });
+
+        
+
+        lightBtns[6].click(function() {
+
+            handleLightSelected(6);
+
+        });
+
+        
+        lightBtns[7].click(function() {
+
+            handleLightSelected(7);
+
+        });
+
+        
+        lightBtns[8].click(function() {
+
+            handleLightSelected(8);
+
+        });
+     
+
+        lightBtns[9].click(function() {
+
+            handleLightSelected(9);
+
+        });
+}
+
+displayLoad(15);
+        
+
+                                              
+
+// Handle file submit request by user
+
+		var buttonWidth = screenWidth/3;
+		var buttonHeight = screenHeight/15;
+
+			
+			
+
+		var button = paper.Button({x:((screenWidth/2)-(buttonWidth/2)),y:screenHeight-(buttonHeight*2),width:buttonWidth,height:buttonHeight,r:10.,bgColor: "plum", textAttrs:{'font-size':(screenHeight/25),'font-weight': "bold"},str:'Control'})
+
+		button.attr({gradient: '90-#526c7a-#64a0c1', stroke: '#ddd', 'stroke-width': 5,  });
+
+		button.onClick = function(){
+			socket.emit('movementpage',devSelected);
+		/*	socket.on('loadmovement',function(page){
+				document.location.href = page;*/
+			});
+			
+		}		
+		
+		
+    /*    submitBtn.onClick = function() {
+
+            if (currentFile !== null) {
+					
+                 socket.emit("fileLoad", files[currentFile].name+".xml");
+
+                 paper.clear();                             // clear the file load canvas
+
+				Display();// need to  reset what can be seen	
+
+            }
+
+        }*/
+
+      // End of displayLoad function
+	
+//orienttation section
+	
+	
+//buttons
+
+
+
+
+</script>
+ 	
+	<!-- Including the JS libraries that we use -->
+	<script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+
+	<!-- Socket.io library -->
+	<script src="/socket.io/socket.io.js"></script>
+
+	<!-- Main JavaScript file -->
+	</body>
+</html>
