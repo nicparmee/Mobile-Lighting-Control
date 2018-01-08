@@ -1,0 +1,39 @@
+2014-08-20  Jan Stransky  <Jan.Stransky@fsv.cvut.cz>
+
+	* RaphaelTools 0.8 released
+
+	* (only for consistent numbering with JSMech, otherwise no changes dwere done)
+
+2013-08-20  Jan Stransky  <Jan.Stransky@fsv.cvut.cz>
+
+	* RaphaelTools 0.7 released
+
+	* Transition to GNU LGPL license
+
+	* Transition to Closure compiler for minification
+
+	* Transition to JSDoc3 documentation
+
+	* Code cleanup
+
+	* Documentation update
+
+2012-04-20  Jan Stransky  <Jan.Stransky@fsv.cvut.cz>
+
+	* RaphaelTools 0.6 released
+
+	* Documentation improved.
+
+	* Added Point3d, Ellipse, LineBR
+
+2011-09-19  Jan Stransky  <Jan.Stransky@fsv.cvut.cz>
+
+	* RaphaelTools 0.5 released
+
+	* First public release. Raphaël extension (button, sliders, misc..)
+
+	* Button, Slider, Point2d, Line, Path, Circle, TextRect, support for
+	  interactivity (drag&drop)
+
+No news for earlier releases.
+
