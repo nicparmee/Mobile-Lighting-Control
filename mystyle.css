@@ -1,0 +1,60 @@
+#container {
+  width: 100px;
+  height: 100px;
+  position: relative;
+}
+
+#containerwheel {
+  width: 50px;
+  height: 50px;
+  position: relative;
+  left: 50;
+}
+
+#paper4,
+#paper1{
+  width: 100%;
+  height: 100%;
+  position: relative;
+  top: 0;
+  left: 0;
+}
+
+#paper2{
+width: 50%;
+  height: 50%;
+  position: relative;
+  top: 500;
+  left: 475;
+}
+
+#paper3{
+width: 50%;
+  height: 50%;
+  position: relative;
+  top: 850;
+  left: 0;
+}
+
+#paper2 {
+ z-index:10;
+}
+
+#paper3 {
+ z-index:5;
+}
+
+#paper4{
+	z-index:15;
+}
+
+html {
+	-ms-touch-action: none;
+	}
+html, body {
+	width:50%;
+	}
+body {
+	background:#bbb;
+	font:14px sans-serif;
+	}

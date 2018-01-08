@@ -1,0 +1,4 @@
+.box img:hover, .box img.clicked{
+    margin-left:500px;
+    -webkit-transition:1s; // you don't need to specify this again
+ }

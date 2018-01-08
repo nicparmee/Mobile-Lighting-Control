@@ -1,0 +1,92 @@
+<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="mystyle.css">
+		<meta charset="utf-8">
+		<title>Settings Page</title>
+	 
+	</head>
+
+		
+
+     <script src="/socket.io/socket.io.js"></script>
+
+		<script type="text/javascript" src= "raphael.js"> </script> 
+		<script type="text/javascript" src= "raphaeltools.js"> </script>
+		<script type="text/javascript" src= "jquery.js"> </script>
+		<script type="text/javascript" src= "jquery.min.js"> </script>
+		<script type="text/javascript" src= "kinetic.js"> </script>
+  </head>
+
+
+   <body>
+   
+   
+   
+   <div id="paper1">
+  </div>
+
+
+
+<script>
+
+var screenWidth = window.innerWidth;
+var screenHeight = window.innerHeight;
+var halfscreenWidth = screenWidth/2;
+
+var socket = io(); 
+var paper;
+var canclick = false;
+
+paper = Raphael("paper1", screenWidth, screenHeight);
+
+
+var backBtn = paper.Button({x:140,y:400,width:100,height:100,r:10.,bgColor: "plum", textAttrs:{'font-size':10,'font-weight': "bold"},str:'Back'});
+
+var colourBtn = paper.Button({x:20,y:400,width:100,height:100,r:10.,bgColor: "plum", textAttrs:{'font-size':10,'font-weight': "bold"},str:'Colours'});
+
+var whiteBtn = paper.Button({x:280,y:400,width:100,height:100,r:10.,bgColor: "white", textAttrs:{'font-size':0,'font-weight': "bold"},str:'kak'});
+
+var blueBtn = paper.Button({x:380,y:400,width:100,height:100,r:10.,bgColor: "blue", textAttrs:{'font-size':0,'font-weight': "bold"},str:'kak'});
+
+whiteBtn.hide();
+blueBtn.hide();
+
+backBtn.onClick =function(){
+
+	socket.emit('movementpage');
+	socket.on('loadmovement',function(page){
+	document.location.href = page;
+	
+	});
+}
+
+
+colourBtn.onClick =function(){
+		whiteBtn.show();
+		blueBtn.show();
+		canclick = true;
+		if(canclick){
+			whiteBtn.onClick =function(){
+			socket.emit('colour',0);
+			canclick = false;
+			}
+			blueBtn.onClick = function(){
+			socket.emit('colour',30);
+			alert("blue");
+			canclick = false;
+			}
+		}
+	}
+	
+
+
+</script>
+	<!-- Including the JS libraries that we use -->
+	<script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+
+	<!-- Socket.io library -->
+	<script src="/socket.io/socket.io.js"></script>
+
+	<!-- Main JavaScript file -->
+	</body>
+</html>
